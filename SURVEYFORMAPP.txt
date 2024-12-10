@@ -1,0 +1,501 @@
+import 'package:flutter/material.dart';
+import 'dart:math';
+
+void main() {
+  runApp(PoliticalSurveyApp());
+}
+
+class PoliticalSurveyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Political Survey',
+      theme: ThemeData(primarySwatch: Colors.blue),
+      home: MainScreen(),
+    );
+  }
+}
+
+// Main Screen with state and qualification input
+class MainScreen extends StatefulWidget {
+  @override
+  _MainScreenState createState() => _MainScreenState();
+}
+
+class _MainScreenState extends State<MainScreen> {
+  String? selectedState;
+  String? selectedQualification;
+
+  final List<String> states = [
+    'Andhra Pradesh',
+    'Arunachal Pradesh',
+    'Assam',
+    'Bihar',
+    'Chhattisgarh',
+    'Goa',
+    'Gujarat',
+    'Haryana',
+    'Himachal Pradesh',
+    'Jharkhand',
+    'Karnataka',
+    'Kerala',
+    'Madhya Pradesh',
+    'Maharashtra',
+    'Manipur',
+    'Meghalaya',
+    'Mizoram',
+    'Nagaland',
+    'Odisha',
+    'Punjab',
+    'Rajasthan',
+    'Sikkim',
+    'Tamil Nadu',
+    'Telangana',
+    'Tripura',
+    'Uttar Pradesh',
+    'Uttarakhand',
+    'West Bengal',
+  ];
+
+  final List<String> qualifications = [
+    'High School',
+    'Graduate',
+    'Postgraduate',
+    'PhD',
+    'Other',
+  ];
+
+  void navigateToPartyScreen() {
+    if (selectedState != null && selectedQualification != null) {
+      // Navigate to Party selection screen
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => HomeScreen(state: selectedState!, qualification: selectedQualification!),
+        ),
+      );
+    } else {
+      // Show an alert if either state or qualification is not selected
+      showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: Text('Error'),
+            content: Text('Please select both state and qualification.'),
+            actions: <Widget>[
+              TextButton(
+                child: Text('OK'),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+            ],
+          );
+        },
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Political Survey'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Select Your State and Qualification',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 20),
+            DropdownButton<String>(
+              hint: Text('Select Your State'),
+              value: selectedState,
+              onChanged: (newValue) {
+                setState(() {
+                  selectedState = newValue;
+                });
+              },
+              items: states.map<DropdownMenuItem<String>>((state) {
+                return DropdownMenuItem<String>(
+                  value: state,
+                  child: Text(state),
+                );
+              }).toList(),
+            ),
+            SizedBox(height: 20),
+            DropdownButton<String>(
+              hint: Text('Select Your Qualification'),
+              value: selectedQualification,
+              onChanged: (newValue) {
+                setState(() {
+                  selectedQualification = newValue;
+                });
+              },
+              items: qualifications.map<DropdownMenuItem<String>>((qualification) {
+                return DropdownMenuItem<String>(
+                  value: qualification,
+                  child: Text(qualification),
+                );
+              }).toList(),
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: navigateToPartyScreen,
+              child: Text('Next'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Political Party Selection Screen
+class HomeScreen extends StatelessWidget {
+  final String state;
+  final String qualification;
+
+  HomeScreen({required this.state, required this.qualification});
+
+  final List<String> parties = [
+    'Bharatiya Janata Party (BJP)',
+    'Indian National Congress (INC)',
+    'Aam Aadmi Party (AAP)',
+    'Communist Party of India (CPI)',
+    'Communist Party of India (Marxist) (CPI-M)',
+    'All India Trinamool Congress (TMC)',
+    'Nationalist Congress Party (NCP)',
+    'Shiv Sena',
+    'Samajwadi Party (SP)',
+    'Bahujan Samaj Party (BSP)',
+    'Other'
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Select Your Political Party'),
+      ),
+      body: ListView.builder(
+        itemCount: parties.length,
+        itemBuilder: (context, index) {
+          return ListTile(
+            title: Text(parties[index]),
+            onTap: () {
+              // Navigate to Survey Form
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => SurveyForm(
+                    selectedParty: parties[index],
+                    state: state,
+                    qualification: qualification,
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+}
+
+// Survey Form Screen
+class SurveyForm extends StatefulWidget {
+  final String selectedParty;
+  final String state;
+  final String qualification;
+
+  SurveyForm({required this.selectedParty, required this.state, required this.qualification});
+
+  @override
+  _SurveyFormState createState() => _SurveyFormState();
+}
+
+class _SurveyFormState extends State<SurveyForm> {
+  final _formKey = GlobalKey<FormState>();
+
+  List<String> selectedIssues = [];
+  double satisfactionLevel = 50;
+  String? politicalNewsFrequency;
+  String? opinionOnEconomy;
+  TextEditingController feedbackController = TextEditingController();
+
+  final List<String> issues = [
+    'Education',
+    'Healthcare',
+    'Economy',
+    'Environment',
+    'National Security',
+    'Corruption',
+    'Infrastructure Development',
+    'Women Empowerment'
+  ];
+
+  void submitSurvey() {
+    if (_formKey.currentState!.validate()) {
+      // Calculate the winning chances for each party
+      Map<String, double> partyChances = {
+        'Bharatiya Janata Party (BJP)': 35,
+        'Indian National Congress (INC)': 20,
+        'Aam Aadmi Party (AAP)': 15,
+        'Communist Party of India (CPI)': 10,
+        'Communist Party of India (Marxist) (CPI-M)': 5,
+        'All India Trinamool Congress (TMC)': 5,
+        'Nationalist Congress Party (NCP)': 5,
+        'Shiv Sena': 5,
+        'Samajwadi Party (SP)': 5,
+        'Bahujan Samaj Party (BSP)': 5,
+        'Other': 5
+      };
+
+      // Navigate to results screen with winning chances pie chart
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => SurveyResultsScreen(
+            selectedParty: widget.selectedParty,
+            partyChances: partyChances,
+          ),
+        ),
+      );
+
+      // Clear the form
+      _formKey.currentState!.reset();
+      setState(() {
+        selectedIssues = [];
+        satisfactionLevel = 50;
+        politicalNewsFrequency = null;
+        opinionOnEconomy = null;
+        feedbackController.clear();
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Survey Form'),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Survey for ${widget.selectedParty} from ${widget.state}, Qualification: ${widget.qualification}',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 16),
+              Text(
+                '1. Which issues are most important to you? (Select multiple)',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              ...issues.map((issue) {
+                return CheckboxListTile(
+                  title: Text(issue),
+                  value: selectedIssues.contains(issue),
+                  onChanged: (bool? selected) {
+                    setState(() {
+                      if (selected!) {
+                        selectedIssues.add(issue);
+                      } else {
+                        selectedIssues.remove(issue);
+                      }
+                    });
+                  },
+                );
+              }).toList(),
+              SizedBox(height: 16),
+              Text(
+                '2. How satisfied are you with the ${widget.selectedParty}? (1-100)',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              Slider(
+                value: satisfactionLevel,
+                min: 1,
+                max: 100,
+                divisions: 100,
+                label: satisfactionLevel.round().toString(),
+                onChanged: (double value) {
+                  setState(() {
+                    satisfactionLevel = value;
+                  });
+                },
+              ),
+              SizedBox(height: 16),
+              Text(
+                '3. How often do you follow political news?',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              DropdownButton<String>(
+                hint: Text('Select Frequency'),
+                value: politicalNewsFrequency,
+                onChanged: (newValue) {
+                  setState(() {
+                    politicalNewsFrequency = newValue;
+                  });
+                },
+                items: <String>['Rarely', 'Sometimes', 'Often', 'Always']
+                    .map<DropdownMenuItem<String>>((String value) {
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Text(value),
+                  );
+                }).toList(),
+              ),
+              SizedBox(height: 16),
+              Text(
+                '4. Opinion on the current economy?',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              DropdownButton<String>(
+                hint: Text('Select Opinion'),
+                value: opinionOnEconomy,
+                onChanged: (newValue) {
+                  setState(() {
+                    opinionOnEconomy = newValue;
+                  });
+                },
+                items: <String>['Good', 'Neutral', 'Bad']
+                    .map<DropdownMenuItem<String>>((String value) {
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Text(value),
+                  );
+                }).toList(),
+              ),
+              SizedBox(height: 16),
+              Text(
+                '5. Any additional feedback?',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              TextFormField(
+                controller: feedbackController,
+                maxLines: 4,
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(),
+                  hintText: 'Enter your feedback here...',
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please provide feedback.';
+                  }
+                  return null;
+                },
+              ),
+              SizedBox(height: 16),
+              Center(
+                child: ElevatedButton(
+                  onPressed: submitSurvey,
+                  child: Text('Submit Survey'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Survey Results Screen with Pie Chart Display
+class SurveyResultsScreen extends StatelessWidget {
+  final String selectedParty;
+  final Map<String, double> partyChances;
+
+  SurveyResultsScreen({required this.selectedParty, required this.partyChances});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Survey Results'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Survey Results for $selectedParty',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 20),
+            // Display pie chart based on survey results
+            PieChart(partyChances: partyChances),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Pie Chart Widget
+class PieChart extends StatelessWidget {
+  final Map<String, double> partyChances;
+
+  PieChart({required this.partyChances});
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      size: Size(300, 300),
+      painter: PieChartPainter(partyChances),
+    );
+  }
+}
+
+class PieChartPainter extends CustomPainter {
+  final Map<String, double> partyChances;
+
+  PieChartPainter(this.partyChances);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    double startAngle = -pi / 2;
+    Paint paint = Paint()..style = PaintingStyle.fill;
+
+    // Create a list of colors for each party
+    List<Color> colors = [
+      Colors.blue, Colors.green, Colors.red, Colors.orange, Colors.purple,
+      Colors.yellow, Colors.cyan, Colors.pink, Colors.indigo, Colors.teal
+    ];
+
+    double totalChance = partyChances.values.reduce((a, b) => a + b);
+    double currentAngle = startAngle;
+
+    int colorIndex = 0;
+    partyChances.forEach((party, chance) {
+      double sweepAngle = (chance / totalChance) * 2 * pi;
+
+      paint.color = colors[colorIndex % colors.length];
+      canvas.drawArc(
+        Rect.fromCircle(center: Offset(size.width / 2, size.height / 2), radius: size.width / 2),
+        currentAngle,
+        sweepAngle,
+        true,
+        paint,
+      );
+
+      currentAngle += sweepAngle;
+      colorIndex++;
+    });
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) {
+    return false;
+  }
+}
